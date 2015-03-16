@@ -10,10 +10,11 @@
 #import "ZBarSDK.h"
 #import "QRCodeGenerator.h"
 
-@interface ViewController ()
+@interface ViewController ()<ZBarReaderDelegate>
 @property (weak, nonatomic) IBOutlet UIImageView *imageView;
 @property (weak, nonatomic) IBOutlet UITextField *iText;
-
+@property (weak, nonatomic) IBOutlet UILabel *showBarCodeLabel;
+@property (strong, nonatomic)UIImagePickerController *imagePickerController;
 @end
 
 @implementation ViewController
@@ -60,17 +61,55 @@
     }];
     
 }
+//扫描本地文件
+- (IBAction)scanLocaImageBarCode:(id)sender {
+    
+    
+    
+    NSUInteger sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    // 判断是否支持相机
+    if([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
+        sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    }else{
+        sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
+        
+    }
+    // 跳转到相机或相册页面
+    _imagePickerController = [[UIImagePickerController alloc] init];
+    _imagePickerController.delegate = self;
+    _imagePickerController.allowsEditing = YES;
+    _imagePickerController.sourceType = sourceType;
+    
+    [self presentViewController:_imagePickerController animated:YES completion:^{}];
+}
 #pragma mark 二维码结束扫描对应事件（Delegate）
 
 - (void) imagePickerController: (UIImagePickerController*) reader
  didFinishPickingMediaWithInfo: (NSDictionary*) info
 {
-    id<NSFastEnumeration> results =
-    [info objectForKey: ZBarReaderControllerResults];
     ZBarSymbol *symbol = nil;
-    for(symbol in results)
-        break;
-    [reader dismissViewControllerAnimated:YES completion:nil];
+    if (reader==_imagePickerController) {
+        UIImage *image = [info objectForKey:UIImagePickerControllerOriginalImage];
+        _imageView.image = image;
+        ZBarReaderController* read = [ZBarReaderController new];
+        
+        read.readerDelegate = self;
+        
+        CGImageRef cgImageRef = image.CGImage;
+        
+        for(symbol in [read scanImage:cgImageRef]) break;
+        [self dismissViewControllerAnimated:YES completion:nil];
+    }else{
+        id<NSFastEnumeration> results =
+        [info objectForKey: ZBarReaderControllerResults];
+        
+        for(symbol in results)
+            break;
+        [reader dismissViewControllerAnimated:YES completion:nil];
+    }
+    
+    
+    
     
     //判断是否包含 头'http:'
     NSString *regex = @"http+:[^\\s]*";
@@ -93,8 +132,26 @@
     }
     NSLog(@"%@",codeString);
     _iText.text = codeString;
+    _showBarCodeLabel.text = codeString;
 }
-
+-(void)readerControllerDidFailToRead: (ZBarReaderController*) reader withRetry: (BOOL) retry{
+    
+    if(retry){
+        
+        
+        //retry == YES 选择图片为非二维码
+        UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"" message:@"您选择的二维码不正确,请重新选择" delegate:self cancelButtonTitle:nil otherButtonTitles:@"确定", nil];
+        [alert show];
+        //retry == 1 选择图片为非二维码。
+        NSLog(@"ok");
+        
+        return;
+        
+    }else{
+        NSLog(@"nooooooooo");
+    }
+    
+}
 #pragma mark 生成二维码
 - (IBAction)produceBarcode:(id)sender {
     /*字符转二维码
