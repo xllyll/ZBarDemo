@@ -4,3 +4,4 @@
 
 添加了从相册中读取的二维码
 
+![image](https://github.com/xllyll/ZBarDemo/blob/master/IMG_0365.PNG?raw=true)
