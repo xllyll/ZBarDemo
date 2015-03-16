@@ -98,6 +98,10 @@
         CGImageRef cgImageRef = image.CGImage;
         
         for(symbol in [read scanImage:cgImageRef]) break;
+        if(symbol==nil){
+            UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"" message:@"您选择的二维码不正确,请重新选择" delegate:self cancelButtonTitle:nil otherButtonTitles:@"确定", nil];
+            [alert show];
+        }
         [self dismissViewControllerAnimated:YES completion:nil];
     }else{
         id<NSFastEnumeration> results =
